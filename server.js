@@ -251,6 +251,7 @@ app.get('/home', checkAuthenticated, (req, res) => {
     res.render("index.ejs");
 });
 
-app.listen(3000, () => {
-    console.log('Server is running on port 3000');
+const PORT = process.env.PORT || 3000; // 3000 is a fallback
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });

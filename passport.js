@@ -4,30 +4,32 @@ const bcrypt = require('bcrypt');
 
 function initialize(passport) {
     const authenticateUser = async (email, password, done) => {
-        try {
-            // Find the user by email
-            const user = await User.findOne({ email });
-            if (!user) {
-                return done(null, false, { message: 'No user with that email' });
-            }
-
-            // Check if the user's password is correct
-            const isMatch = await bcrypt.compare(password, user.password);
-            if (!isMatch) {
-                return done(null, false, { message: 'Password incorrect' });
-            }
-
-            // Check if the user's email is confirmed
-            if (!user.isConfirmed) {
-                return done(null, false, { message: 'Email not confirmed' });
-            }
-
-            // If everything is fine, return the user
-            return done(null, user);
-        } catch (error) {
-            console.error("Authentication error:", error);
-            return done(error);
+    console.log("Attempting to authenticate user:", email);
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            console.error("No user found with that email");
+            return done(null, false, { message: 'No user with that email' });
         }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            console.error("Password incorrect for user:", email);
+            return done(null, false, { message: 'Password incorrect' });
+        }
+
+        if (!user.isConfirmed) {
+            console.error("Email not confirmed for user:", email);
+            return done(null, false, { message: 'Email not confirmed' });
+        }
+
+        return done(null, user);
+    } catch (error) {
+        console.error("Authentication error:", error);
+        return done(error);
+    }
+};
+
     };
 
     // Use the local strategy for authentication

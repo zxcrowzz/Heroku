@@ -182,28 +182,50 @@ function generateVerificationCode() {
 
 app.post("/login", (req, res, next) => {
     passport.authenticate('local', async (err, user, info) => {
-        if (err) { return next(err); }
-        if (!user) { return res.redirect('/login'); }
+        // Handle any errors during authentication
+        if (err) {
+            console.error("Authentication error:", err);
+            return next(err);
+        }
 
+        // If user is not found, redirect back to the login page
+        if (!user) {
+            console.warn("User not found:", info.message); // Log the reason
+            return res.redirect('/login');
+        }
+
+        // Log in the user
         req.logIn(user, async (err) => {
             if (err) {
                 console.error("Login error:", err);
                 return next(err);
             }
 
+            // Generate a verification code
             const verificationCode = generateVerificationCode();
-            await transporter.sendMail({
-                to: user.email,
-                subject: 'Your Verification Code',
-                html: `Your verification code is: ${verificationCode}`
-            });
+            console.log("Sending verification code to:", user.email);
 
-            req.session.verificationCode = verificationCode;
+            try {
+                // Send the verification email
+                await transporter.sendMail({
+                    to: user.email,
+                    subject: 'Your Verification Code',
+                    html: `Your verification code is: ${verificationCode}`
+                });
 
-            return res.render('verify', { message: 'Enter the verification code sent to your email.' });
+                // Store the verification code in the session
+                req.session.verificationCode = verificationCode;
+
+                // Render the verification page
+                return res.render('verify', { message: 'Enter the verification code sent to your email.' });
+            } catch (emailError) {
+                console.error("Error sending email:", emailError);
+                return res.render('login', { message: 'Failed to send verification code. Please try again.' });
+            }
         });
     })(req, res, next);
 });
+
 
 app.post("/verify", (req, res, next) => {
     const { verificationCode } = req.body;
